@@ -1,6 +1,5 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { useTheme } from './hooks/useTheme';
 import { ThemeProvider } from './context/ThemeContext';
 import { CartProvider } from './context/CartContext';
 import { BookingProvider } from './context/BookingContext';
@@ -26,14 +25,13 @@ function PageLoader() {
 }
 
 export default function App() {
-  const { dark, toggle } = useTheme();
   const location = useLocation();
 
   return (
-    <ThemeProvider dark={dark} toggle={toggle}>
+    <ThemeProvider dark={true} toggle={() => {}}>
     <CartProvider>
       <BookingProvider>
-        <Layout dark={dark} onToggleTheme={toggle}>
+        <Layout>
           <Suspense fallback={<PageLoader />}>
             <AnimatePresence mode="wait">
               <Routes location={location} key={location.pathname}>

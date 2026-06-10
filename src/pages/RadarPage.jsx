@@ -202,16 +202,6 @@ function MapOverlay({ showRoutes, setShowRoutes, showSidebar, setShowSidebar, en
           <span className="text-white/10">|</span>
           <span className="text-[#00ff88] text-[10px] font-bold">● LIVE</span>
         </div>
-        <div className="flex gap-1.5">
-          {['satellite','dark','light'].map(t => (
-            <button key={t} onClick={() => setTileMode(t)}
-              className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all capitalize ${
-                tileMode===t ? 'bg-[#0066ff]/25 border border-[#0066ff]/40 text-[#3399ff]'
-                : `border ${btnOff}`}`}>
-              {t==='satellite'?'🛰️ Satellite':t==='dark'?'🌙 Dark':'☀️ Light'}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
     <div className="leaflet-top leaflet-right" style={{ marginTop:14, marginRight:14 }}>
@@ -341,24 +331,16 @@ export default function RadarPage() {
       <div className={`flex h-[75vh] sm:h-[80vh] lg:h-[82vh] -mt-4 -mx-4 sm:-mx-6 rounded-none sm:rounded-[20px] overflow-hidden border shadow-2xl ${theme.outer}`}>
         {/* MAP */}
         <div className="flex-1 relative bg-black">
-          {/* Subtle dark tint over satellite for radar look */}
-          {tileMode === 'satellite' && (
-            <div className="absolute inset-0 z-[400] pointer-events-none"
-              style={{
-                background: 'rgba(0,0,0,0.18)',
-                backdropFilter: 'brightness(0.75) contrast(1.15) saturate(0.8)',
-                WebkitBackdropFilter: 'brightness(0.75) contrast(1.15) saturate(0.8)',
-              }} />
-          )}
-
           <MapContainer center={[22,5]} zoom={3} className="w-full h-full"
             zoomControl={false} worldCopyJump={false} minZoom={2} maxZoom={12}
-            style={{background:'#0a1120'}} attributionControl={false}>
+            style={{background:'#1a1a2e'}} attributionControl={false}>
             <TileLayer url={tileUrl} key={tileMode} attribution='' />
-            {/* Dark label overlay for satellite mode */}
-            {tileMode === 'satellite' && (
-              <TileLayer url={labelUrl} attribution='' opacity={0.7} />
-            )}
+            {/* Labels overlay — country/city names + borders */}
+            <TileLayer
+              url="https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png"
+              attribution=''
+              opacity={0.9}
+            />
 
             <MapOverlay showRoutes={showRoutes} setShowRoutes={setShowRoutes}
               showSidebar={showSidebar} setShowSidebar={setShowSidebar}

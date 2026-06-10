@@ -2,16 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 
 const STORAGE_KEY = 'ft_dark_mode';
 
-/**
- * Dark mode toggle with localStorage persistence.
- */
 export function useTheme() {
-  const [dark, setDark] = useState(() => {
-    // Check localStorage first, then system preference
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored !== null) return stored === 'true';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  // Always default to dark mode
+  const [dark, setDark] = useState(true);
 
   useEffect(() => {
     const root = document.documentElement;
