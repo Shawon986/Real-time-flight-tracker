@@ -2,90 +2,159 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ────────────────────────────────────────────
-   Base
-   ──────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════
+   AVIATION THEME — SkyTrack Design System
+   ═══════════════════════════════════════════════ */
+
 @layer base {
+  :root {
+    --aviation-bg: #050b14;
+    --aviation-surface: #0c1524;
+    --aviation-elevated: #111d34;
+    --aviation-border: rgba(255,255,255,0.06);
+    --aviation-text: #e6edf5;
+    --aviation-muted: #7a8ba0;
+    --aviation-primary: #0066ff;
+    --aviation-primary-glow: rgba(0,102,255,0.3);
+    --aviation-radar: #00e676;
+    --aviation-radar-glow: rgba(0,230,118,0.3);
+    --aviation-warning: #ff9800;
+    --aviation-danger: #ff3d3d;
+    --aviation-glass: rgba(12,21,36,0.75);
+  }
+
+  .light {
+    --aviation-bg: #f2f5f9;
+    --aviation-surface: #ffffff;
+    --aviation-elevated: #f8fafc;
+    --aviation-border: rgba(0,0,0,0.06);
+    --aviation-text: #0f172a;
+    --aviation-muted: #64748b;
+    --aviation-glass: rgba(255,255,255,0.75);
+  }
+
   * {
     scrollbar-width: thin;
-    scrollbar-color: #94a3b8 transparent;
+    scrollbar-color: #1e3a5f transparent;
   }
-  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar { width: 5px; height: 5px; }
   *::-webkit-scrollbar-track { background: transparent; }
-  *::-webkit-scrollbar-thumb { background-color: #94a3b8; border-radius: 3px; }
+  *::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
+  *::-webkit-scrollbar-thumb:hover { background: #2d4f7c; }
+
+  body {
+    background: var(--aviation-bg);
+    color: var(--aviation-text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
-/* ────────────────────────────────────────────
-   Leaflet overrides
-   ──────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════
+   Glass panels & aviation cards
+   ═══════════════════════════════════════════════ */
+
+@layer components {
+  .glass-panel {
+    background: var(--aviation-glass);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--aviation-border);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.03) inset;
+  }
+
+  .glass-card {
+    background: rgba(12,21,36,0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .light .glass-card {
+    background: rgba(255,255,255,0.8);
+    border-color: rgba(0,0,0,0.06);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+  }
+
+  .aviation-btn {
+    background: var(--aviation-primary);
+    color: #fff;
+    font-weight: 700;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    box-shadow: 0 0 30px var(--aviation-primary-glow);
+    transition: all 0.3s ease;
+  }
+  .aviation-btn:hover {
+    box-shadow: 0 0 50px var(--aviation-primary-glow);
+    transform: translateY(-1px);
+  }
+
+  .radar-border {
+    border: 1px solid rgba(0,230,118,0.15);
+    box-shadow: 0 0 20px rgba(0,230,118,0.05);
+  }
+
+  .live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--aviation-radar);
+  }
+  .live-indicator::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--aviation-radar);
+    box-shadow: 0 0 8px var(--aviation-radar-glow);
+    animation: livePulse 1.2s ease-in-out infinite;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   Leaflet map overrides
+   ═══════════════════════════════════════════════ */
 .leaflet-container {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #eef2f6;
+  background: #060d1a !important;
 }
-.dark .leaflet-container {
-  background: #0f172a;
-}
+.dark .leaflet-container { background: #060d1a !important; }
+.light .leaflet-container { background: #e8edf2 !important; }
+
 .dark .leaflet-tile {
-  filter: brightness(0.55) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+  filter: brightness(0.4) invert(1) contrast(2.5) hue-rotate(180deg) saturate(0.4) brightness(0.7);
 }
-.dark .leaflet-popup-content-wrapper {
-  background: rgba(30, 41, 59, 0.95);
-  backdrop-filter: blur(12px);
-  color: #e2e8f0;
-  border: 1px solid rgba(71, 85, 105, 0.5);
-  border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-}
-.dark .leaflet-popup-tip { background: rgba(30, 41, 59, 0.95); }
 .leaflet-popup-content-wrapper {
-  border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-  padding: 0;
-  overflow: hidden;
-}
-.leaflet-popup-content {
-  margin: 0;
-  min-width: 200px;
-}
-
-/* ────────────────────────────────────────────
-   Glass card (reusable)
-   ──────────────────────────────────────────── */
-.glass-card {
-  background: rgba(255,255,255,0.85);
+  background: rgba(12,21,36,0.95) !important;
   backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.3);
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.5) !important;
+  color: #e6edf5 !important;
 }
-.dark .glass-card {
-  background: rgba(15,23,42,0.85);
-  border-color: rgba(71,85,105,0.3);
+.leaflet-popup-tip { background: rgba(12,21,36,0.95) !important; }
+.light .leaflet-popup-content-wrapper {
+  background: rgba(255,255,255,0.95) !important;
+  color: #0f172a !important;
+  border-color: rgba(0,0,0,0.08) !important;
 }
+.light .leaflet-popup-tip { background: rgba(255,255,255,0.95) !important; }
 
-/* ────────────────────────────────────────────
-   Badge glass
-   ──────────────────────────────────────────── */
-.badge-glass {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  text-transform: uppercase;
-  padding: 0.3rem 0.75rem;
-  border-radius: 9999px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-/* ────────────────────────────────────────────
-   Map container glow
-   ──────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════
+   Map container
+   ═══════════════════════════════════════════════ */
 .map-container {
   position: relative;
+  border-radius: 16px;
+  overflow: hidden;
 }
 .map-glow {
   position: absolute;
@@ -93,17 +162,13 @@
   z-index: 5;
   pointer-events: none;
   border-radius: inherit;
-  box-shadow: inset 0 0 60px rgba(59,130,246,0.08), 0 0 30px rgba(59,130,246,0.06);
+  box-shadow: inset 0 0 80px rgba(0,102,255,0.06), 0 0 60px rgba(0,102,255,0.04);
 }
 
-/* ────────────────────────────────────────────
-   AIRCRAFT MARKER — radar rings + glow
-   ──────────────────────────────────────────── */
-.aircraft-icon-container {
-  background: transparent !important;
-  border: none !important;
-}
-
+/* ═══════════════════════════════════════════════
+   Aircraft radar marker
+   ═══════════════════════════════════════════════ */
+.aircraft-icon-container { background: transparent !important; border: none !important; }
 .aircraft-wrapper {
   position: relative;
   display: flex;
@@ -112,13 +177,11 @@
   transition: transform 0.4s ease;
 }
 
-/* Radar pulse rings */
 .radar-ring {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  top: 50%; left: 50%;
   border-radius: 50%;
-  border: 2px solid #3b82f6;
+  border: 2px solid var(--aviation-radar);
   pointer-events: none;
   transform: translate(-50%, -50%);
   animation: radarExpand 2.4s ease-out infinite;
@@ -128,259 +191,128 @@
 .radar-ring-3 { animation-delay: 1.6s; }
 
 @keyframes radarExpand {
-  0%   { width: 8px; height: 8px; opacity: 0.9; border-width: 2.5px; }
-  100% { width: 90px; height: 90px; opacity: 0; border-width: 0.3px; }
+  0%   { width: 8px; height: 8px; opacity: 0.85; border-width: 2px; }
+  100% { width: 100px; height: 100px; opacity: 0; border-width: 0.2px; }
 }
 
-/* Glow behind aircraft */
 .aircraft-glow {
   position: absolute;
-  width: 22px;
-  height: 22px;
+  width: 22px; height: 22px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(59,130,246,0.7) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(0,102,255,0.6) 0%, transparent 70%);
   pointer-events: none;
-  transition: all 0.3s ease;
 }
-.aircraft-glow.pulsing {
-  animation: glowPulse 1.8s ease-in-out infinite;
-}
+.aircraft-glow.pulsing { animation: glowPulse 1.8s ease-in-out infinite; }
 @keyframes glowPulse {
-  0%, 100% { transform: scale(1); opacity: 0.7; }
-  50%      { transform: scale(1.8); opacity: 1; }
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50%      { transform: scale(2); opacity: 1; }
 }
 
 .aircraft-svg {
-  position: relative;
-  z-index: 2;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
-  transition: all 0.3s ease;
+  position: relative; z-index: 2;
+  filter: drop-shadow(0 4px 12px rgba(0,102,255,0.4));
 }
 
-/* Status dot on aircraft */
 .status-dot {
-  position: absolute;
-  bottom: -2px;
-  left: 50%;
+  position: absolute; bottom: -2px; left: 50%;
   transform: translateX(-50%);
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #9ca3af;
-  z-index: 3;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #64748b; z-index: 3;
 }
 .status-dot.live {
-  background: #22c55e;
+  background: var(--aviation-radar);
   animation: statusBlink 1s ease-in-out infinite;
 }
 @keyframes statusBlink {
-  0%, 100% { opacity: 1; box-shadow: 0 0 6px #22c55e; }
-  50%      { opacity: 0.3; box-shadow: 0 0 2px #22c55e; }
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--aviation-radar); }
+  50%      { opacity: 0.3; box-shadow: 0 0 2px var(--aviation-radar); }
 }
 
-/* ────────────────────────────────────────────
-   AIRPORT MARKER
-   ──────────────────────────────────────────── */
-.airport-icon-container {
-  background: transparent !important;
-  border: none !important;
-}
-.airport-marker {
-  position: relative;
-  width: 18px;
-  height: 18px;
-}
+/* ═══════════════════════════════════════════════
+   Airport markers
+   ═══════════════════════════════════════════════ */
+.airport-icon-container { background: transparent !important; border: none !important; }
+.airport-marker { position: relative; width: 18px; height: 18px; }
 .airport-outer {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: rgba(139,92,246,0.2);
-  border: 2px solid #8b5cf6;
+  position: absolute; inset: 0; border-radius: 50%;
+  background: rgba(0,230,118,0.15);
+  border: 2px solid var(--aviation-radar);
   animation: airportPulse 2s ease-out infinite;
 }
 .airport-inner {
-  position: absolute;
-  top: 50%;
-  left: 50%;
+  position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #8b5cf6;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--aviation-radar);
 }
 @keyframes airportPulse {
-  0%   { transform: scale(1); opacity: 1; }
-  100% { transform: scale(2); opacity: 0; }
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2.5); opacity: 0; }
 }
 .airport-tooltip {
-  background: rgba(139,92,246,0.12) !important;
-  border: 1px solid rgba(139,92,246,0.3) !important;
-  color: #7c3aed !important;
-  font-weight: 700 !important;
-  font-size: 10px !important;
-  letter-spacing: 0.05em;
-  border-radius: 6px !important;
+  background: rgba(0,230,118,0.1) !important;
+  border: 1px solid rgba(0,230,118,0.25) !important;
+  color: var(--aviation-radar) !important;
+  font-weight: 700 !important; font-size: 10px !important;
+  letter-spacing: 0.05em; border-radius: 6px !important;
   padding: 2px 8px !important;
 }
-.airport-tooltip::before {
-  border-top-color: rgba(139,92,246,0.3) !important;
-}
 
-/* ────────────────────────────────────────────
+/* ═══════════════════════════════════════════════
    Animated route line
-   ──────────────────────────────────────────── */
-.animated-route-line {
-  animation: dashMove 1.2s linear infinite;
-}
-@keyframes dashMove {
-  to { stroke-dashoffset: -36; }
-}
+   ═══════════════════════════════════════════════ */
+.animated-route-line { animation: dashMove 1.2s linear infinite; }
+@keyframes dashMove { to { stroke-dashoffset: -36; } }
 
-/* ────────────────────────────────────────────
-   FLIGHT POPUP
-   ──────────────────────────────────────────── */
-.flight-popup {
-  padding: 10px 14px;
-}
-.popup-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-.popup-callsign {
-  font-weight: 700;
-  font-size: 1rem;
-  color: #111827;
-}
-.dark .popup-callsign { color: #f1f5f9; }
+/* ═══════════════════════════════════════════════
+   Flight popup
+   ═══════════════════════════════════════════════ */
+.flight-popup { padding: 10px 14px; }
+.popup-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.popup-callsign { font-weight: 700; font-size: 1rem; color: #e6edf5; }
+.light .popup-callsign { color: #0f172a; }
 .popup-badge {
-  font-size: 0.6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
+  font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.03em; padding: 0.15rem 0.5rem; border-radius: 999px;
+  background: rgba(0,102,255,0.15); color: #3399ff;
 }
-.popup-badge.en_route {
-  background: #dcfce7;
-  color: #16a34a;
-}
-.dark .popup-badge { background: rgba(59,130,246,0.2); color: #93c5fd; }
-.dark .popup-badge.en_route { background: rgba(34,197,94,0.2); color: #86efac; }
-
-.popup-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.popup-stats > div {
-  flex: 1 1 45%;
-  min-width: 80px;
-}
+.popup-badge.en_route { background: rgba(0,230,118,0.15); color: var(--aviation-radar); }
+.popup-stats { display: flex; flex-wrap: wrap; gap: 6px; }
+.popup-stats > div { flex: 1 1 45%; min-width: 80px; }
 .popup-stats label {
-  display: block;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #9ca3af;
-  margin-bottom: 1px;
+  display: block; font-size: 0.6rem; text-transform: uppercase;
+  letter-spacing: 0.04em; color: #7a8ba0; margin-bottom: 1px;
 }
-.popup-stats strong {
-  font-size: 0.8rem;
-  color: #111827;
-  font-weight: 600;
-}
-.dark .popup-stats strong { color: #e2e8f0; }
+.popup-stats strong { font-size: 0.8rem; color: #e6edf5; font-weight: 600; }
 
-/* ────────────────────────────────────────────
-   Animations
-   ──────────────────────────────────────────── */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out;
+/* ═══════════════════════════════════════════════
+   Loading screen — plane takeoff animation
+   ═══════════════════════════════════════════════ */
+@keyframes planeFly {
+  0%   { transform: translateX(-120%) translateY(0) rotate(-5deg); }
+  20%  { transform: translateX(-40%) translateY(-10%) rotate(-2deg); }
+  50%  { transform: translateX(20%) translateY(-15%) rotate(0deg); }
+  80%  { transform: translateX(70%) translateY(-5%) rotate(2deg); }
+  100% { transform: translateX(120%) translateY(5%) rotate(5deg); }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%      { transform: translateY(-6px); }
-}
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.animate-slide-up {
-  animation: slideUp 0.5s ease-out;
+@keyframes contrailGrow {
+  0%   { width: 0; opacity: 0; }
+  20%  { width: 20%; opacity: 0.6; }
+  60%  { width: 60%; opacity: 0.3; }
+  100% { width: 100%; opacity: 0; }
 }
 
-@keyframes pulseSlow {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.5; }
-}
-.animate-pulse-slow {
-  animation: pulseSlow 2.5s ease-in-out infinite;
+@keyframes radarSweep {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-@keyframes countUp {
-  from { opacity: 0; transform: scale(0.9); }
-  to   { opacity: 1; transform: scale(1); }
-}
-.animate-count {
-  animation: countUp 0.4s ease-out;
+@keyframes altitudeClimb {
+  0%   { content: '0 ft'; }
+  100% { content: '35,000 ft'; }
 }
 
-/* ────────────────────────────────────────────
-   Number ticker animation
-   ──────────────────────────────────────────── */
-.ticker-value {
-  display: inline-block;
-  font-variant-numeric: tabular-nums;
-  transition: all 0.3s ease;
-}
-.ticker-value.changed {
-  animation: tickerFlash 0.6s ease-out;
-}
-@keyframes tickerFlash {
-  0%   { color: #3b82f6; transform: translateY(-2px); }
-  100% { color: inherit; transform: translateY(0); }
-}
-
-/* ────────────────────────────────────────────
-   Animated background particles (optional)
-   ──────────────────────────────────────────── */
-.bg-particles {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-.bg-particle {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(59,130,246,0.06);
-  animation: particleDrift 20s linear infinite;
-}
-@keyframes particleDrift {
-  0%   { transform: translateY(100vh) scale(0); opacity: 0; }
-  10%  { opacity: 1; }
-  90%  { opacity: 1; }
-  100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
-}
-
-/* ────────────────────────────────────────────
-   Shimmer animation (skeleton loaders)
-   ──────────────────────────────────────────── */
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
@@ -389,9 +321,123 @@
   animation: shimmer 1.8s ease-in-out infinite;
 }
 
-/* ────────────────────────────────────────────
-   Utility: bg-gray-150
-   ──────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════
+   Keyframe animations
+   ═══════════════════════════════════════════════ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.5s ease-out; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-8px); }
+}
+.animate-float { animation: float 3s ease-in-out infinite; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up { animation: slideUp 0.5s ease-out; }
+
+@keyframes pulseSlow {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+.animate-pulse-slow { animation: pulseSlow 2.5s ease-in-out infinite; }
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--aviation-radar-glow); }
+  50%      { opacity: 0.3; box-shadow: 0 0 2px var(--aviation-radar-glow); }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-count { animation: countUp 0.4s ease-out; }
+
+/* ═══════════════════════════════════════════════
+   Badge glass
+   ═══════════════════════════════════════════════ */
+.badge-glass {
+  display: inline-flex; align-items: center; gap: 0.375rem;
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; padding: 0.25rem 0.75rem; border-radius: 9999px;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+
+/* ═══════════════════════════════════════════════
+   Ticker value flash
+   ═══════════════════════════════════════════════ */
+.ticker-value {
+  display: inline-block; font-variant-numeric: tabular-nums;
+  transition: all 0.3s ease;
+}
+.ticker-value.changed {
+  animation: tickerFlash 0.6s ease-out;
+}
+@keyframes tickerFlash {
+  0%   { color: var(--aviation-radar); transform: translateY(-2px); }
+  100% { color: inherit; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════
+   Background particles
+   ═══════════════════════════════════════════════ */
+.bg-particles {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+}
+.bg-particle {
+  position: absolute; border-radius: 50%;
+  background: rgba(0,102,255,0.04);
+  animation: particleDrift 22s linear infinite;
+}
+@keyframes particleDrift {
+  0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(-10vh) scale(1.8); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════
+   Radar sweep background pattern (homepage hero)
+   ═══════════════════════════════════════════════ */
+.radar-bg {
+  position: relative;
+}
+.radar-bg::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(0,102,255,0.04) 0%, transparent 70%),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,230,118,0.015) 2px, rgba(0,230,118,0.015) 3px);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ═══════════════════════════════════════════════
+   Heading number animation
+   ═══════════════════════════════════════════════ */
+@keyframes headingRoll {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-100%); }
+}
+
+/* ═══════════════════════════════════════════════
+   Utility
+   ═══════════════════════════════════════════════ */
 @layer utilities {
   .bg-gray-150 { background-color: #eef2f6; }
+  .text-aviation { color: var(--aviation-text); }
+  .text-muted { color: var(--aviation-muted); }
+  .bg-aviation { background: var(--aviation-bg); }
+  .bg-surface { background: var(--aviation-surface); }
 }
+
+/* ═══════════════════════════════════════════════
+   Smooth scroll
+   ═══════════════════════════════════════════════ */
+html { scroll-behavior: smooth; }
