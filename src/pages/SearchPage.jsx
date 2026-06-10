@@ -37,12 +37,20 @@ export default function SearchPage() {
   };
 
   const hasFilters = filters.airline || filters.from || filters.to || filters.stops || filters.maxPrice;
+  const [showFilters, setShowFilters] = useState(false);
 
   return (
     <PageTransition>
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+        {/* Mobile filter toggle */}
+        <button onClick={() => setShowFilters(f => !f)}
+          className="lg:hidden flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+          {showFilters ? 'Hide Filters' : 'Show Filters'} {hasFilters && <span className="w-1.5 h-1.5 rounded-full bg-[#00e676]" />}
+        </button>
+
         {/* ── SIDEBAR FILTERS ── */}
-        <aside className="lg:w-64 flex-shrink-0">
+        <aside className={`lg:w-64 flex-shrink-0 ${showFilters ? 'block' : 'hidden'} lg:block`}>
           <div className="sticky top-24 space-y-5">
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200/60 dark:border-gray-700/40">
               <div className="flex items-center justify-between mb-4">

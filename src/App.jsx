@@ -1,6 +1,7 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useTheme } from './hooks/useTheme';
+import { ThemeProvider } from './context/ThemeContext';
 import { CartProvider } from './context/CartContext';
 import { BookingProvider } from './context/BookingContext';
 import Layout from './components/layout/Layout';
@@ -29,6 +30,7 @@ export default function App() {
   const location = useLocation();
 
   return (
+    <ThemeProvider dark={dark} toggle={toggle}>
     <CartProvider>
       <BookingProvider>
         <Layout dark={dark} onToggleTheme={toggle}>
@@ -51,5 +53,6 @@ export default function App() {
         </Layout>
       </BookingProvider>
     </CartProvider>
+    </ThemeProvider>
   );
 }

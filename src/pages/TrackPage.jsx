@@ -79,7 +79,7 @@ function TelemetryBar({ flight, lastUpdated, isMock }) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3"
+      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3"
     >
       {[
         { label: 'Altitude', value: formatAltitude(flight.altitudeMeters), trend: altTrend, color: '#00e676' },
@@ -259,7 +259,7 @@ export default function TrackPage() {
         </AnimatePresence>
 
         {/* ── Main Display: Map or 3D ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
           {/* Left/Center: Map or 3D Scene */}
           <div className="lg:col-span-2">
             <AnimatePresence mode="wait">
@@ -286,7 +286,7 @@ export default function TrackPage() {
                       <div className="text-[#7a8ba0] animate-pulse text-sm">Loading 3D Scene...</div>
                     </div>
                   }>
-                    <FlightScene3D flight={flight} progress={progress} height={550} />
+                    <FlightScene3D flight={flight} progress={progress} height={typeof window !== 'undefined' && window.innerWidth < 640 ? 350 : 550} />
                   </Suspense>
                 </motion.div>
               )}

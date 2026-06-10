@@ -297,7 +297,7 @@ export default function FlightMap({ flight, track }) {
   const arrPos = flight?.arrival ? getAirportPosition(flight.arrival) : null;
 
   return (
-    <div className="relative w-full h-[520px] sm:h-[620px] rounded-2xl overflow-hidden border border-gray-200/60 dark:border-gray-700/60 shadow-xl shadow-primary-500/5 map-container">
+    <div className="relative w-full h-[350px] sm:h-[500px] lg:h-[620px] rounded-2xl overflow-hidden border border-gray-200/60 dark:border-gray-700/60 shadow-xl shadow-primary-500/5 map-container">
       {/* Decorative gradient border glow */}
       {hasPosition && <div className="map-glow" />}
 

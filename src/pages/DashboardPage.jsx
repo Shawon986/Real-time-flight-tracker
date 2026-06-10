@@ -46,7 +46,7 @@ export default function DashboardPage() {
         <h2 className="text-3xl font-black text-gray-900 dark:text-gray-100">Dashboard</h2>
 
         {/* Stats row */}
-        <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[
             { label: 'Flights Booked', value: stats.totalBookings, icon: '✈️', color: 'from-blue-500 to-blue-700' },
             { label: 'Miles Traveled', value: stats.totalMiles, suffix: '', icon: '🌍', color: 'from-purple-500 to-purple-700' },
