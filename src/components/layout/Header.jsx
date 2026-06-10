@@ -6,6 +6,7 @@ export default function Header({ dark, onToggleTheme, cartCount }) {
 
   const navLinks = [
     { to: '/', label: 'Home' },
+    { to: '/track', label: 'Live Track' },
     { to: '/search', label: 'Flights' },
     { to: '/dashboard', label: 'Dashboard' },
     { to: '/bookings', label: 'My Bookings' },

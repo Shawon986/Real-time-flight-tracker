@@ -10,6 +10,7 @@ import { lazy, Suspense } from 'react';
 import LoadingScreen from './components/ui/LoadingScreen';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
+const TrackPage = lazy(() => import('./pages/TrackPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const FlightDetailPage = lazy(() => import('./pages/FlightDetailPage'));
 const BookingPage = lazy(() => import('./pages/BookingPage'));
@@ -34,6 +35,7 @@ export default function App() {
             <AnimatePresence mode="wait">
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/track" element={<TrackPage />} />
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/flight/:id" element={<FlightDetailPage />} />
                 <Route path="/book/:id" element={<BookingPage />} />
