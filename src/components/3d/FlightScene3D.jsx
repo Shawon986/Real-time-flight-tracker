@@ -1,242 +1,272 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Float, Line, Text } from '@react-three/drei';
+import { OrbitControls, Float, Line, Text, Sky, Cloud, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { AIRPORTS } from '../../utils/constants';
 
 /* ═══════════════════════════════════════════════
-   Ground plane — radar grid
+   Sky + fog atmosphere
    ═══════════════════════════════════════════════ */
-function GroundPlane() {
+function Atmosphere() {
+  return (
+    <>
+      <Sky
+        distance={450000}
+        sunPosition={[100, 80, 50]}
+        inclination={0.5}
+        azimuth={0.25}
+        turbidity={8}
+        rayleigh={2}
+      />
+      <fog attach="fog" args={['#060d1a', 30, 80]} />
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   Enhanced ground plane — terrain colors
+   ═══════════════════════════════════════════════ */
+function TerrainGround() {
   return (
     <group>
-      {/* Base plane */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
-        <planeGeometry args={[60, 60]} />
-        <meshStandardMaterial color="#060d1a" roughness={0.9} metalness={0.1} />
+      {/* Base land */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.6, 0]} receiveShadow>
+        <planeGeometry args={[80, 80]} />
+        <meshStandardMaterial color="#0a1628" roughness={0.8} metalness={0.05} />
       </mesh>
 
-      {/* Grid lines */}
-      <gridHelper
-        args={[60, 40, '#0a1a2e', '#0a1a2e']}
-        position={[0, -0.48, 0]}
-      />
+      {/* Radar grid — main lines */}
+      <gridHelper args={[80, 50, '#0d2240', '#0d2240']} position={[0, -0.59, 0]} />
 
-      {/* Inner radar rings */}
-      {[5, 10, 15, 20, 25].map(r => (
-        <mesh key={r} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.47, 0]}>
-          <ringGeometry args={[r - 0.08, r, 80]} />
-          <meshBasicMaterial color="#00e676" opacity={0.03} transparent side={THREE.DoubleSide} />
+      {/* Glowing radar concentric rings */}
+      {[4, 8, 12, 16, 20, 24, 28, 32, 36].map(r => (
+        <mesh key={r} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.58, 0]}>
+          <ringGeometry args={[r - 0.06, r, 100]} />
+          <meshBasicMaterial
+            color={r % 8 === 0 ? '#00e678' : '#0066ff'}
+            opacity={r % 8 === 0 ? 0.04 : 0.02}
+            transparent
+            side={THREE.DoubleSide}
+          />
         </mesh>
       ))}
 
-      {/* Radar sweep line effect — static arcs */}
-      {Array.from({ length: 12 }).map((_, i) => {
-        const angle = (i / 12) * Math.PI * 2;
+      {/* Radar sweep lines (static pattern) */}
+      {Array.from({ length: 16 }).map((_, i) => {
+        const angle = (i / 16) * Math.PI * 2;
+        const isCardinal = i % 4 === 0;
         return (
-          <mesh key={`sweep-${i}`} rotation={[-Math.PI / 2, 0, angle]} position={[0, -0.46, 0]}>
-            <planeGeometry args={[30, 0.02]} />
-            <meshBasicMaterial color="#00e676" opacity={0.04} transparent side={THREE.DoubleSide} />
+          <mesh
+            key={`radial-${i}`}
+            rotation={[-Math.PI / 2, 0, angle]}
+            position={[0, -0.57, 0]}
+          >
+            <planeGeometry args={[40, isCardinal ? 0.03 : 0.015]} />
+            <meshBasicMaterial
+              color={isCardinal ? '#00e678' : '#0066ff'}
+              opacity={isCardinal ? 0.05 : 0.02}
+              transparent
+              side={THREE.DoubleSide}
+            />
           </mesh>
         );
       })}
+
+      {/* Ocean-like dark patches */}
+      {[[-15, -15], [15, 10], [-10, 20], [20, -10], [0, -20]].map(([x, z], i) => (
+        <mesh key={`ocean-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -0.57, z]}>
+          <circleGeometry args={[3 + i * 1.5, 32]} />
+          <meshBasicMaterial color="#040d1a" opacity={0.4} transparent />
+        </mesh>
+      ))}
     </group>
   );
 }
 
 /* ═══════════════════════════════════════════════
-   Flight path arc
+   Cloud layer
    ═══════════════════════════════════════════════ */
-function FlightPathArc({ depLat, depLng, arrLat, arrLng, progress = 0.5 }) {
-  const points = useMemo(() => {
-    if (depLat == null || arrLat == null) return [];
-
-    // Project lat/lng onto the ground plane (scaled)
-    const scale = 25; // map degrees to world units
-    const centerLat = (depLat + arrLat) / 2;
-    const centerLng = (depLng + arrLng) / 2;
-
-    const project = (lat, lng) => {
-      const x = (lng - centerLng) * scale * Math.cos(centerLat * Math.PI / 180);
-      const z = -(lat - centerLat) * scale;
-      return new THREE.Vector3(x, 0, z);
-    };
-
-    const start = project(depLat, depLng);
-    const end = project(arrLat, arrLng);
-
-    // Create a quadratic bezier with a raised midpoint
-    const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-    const dist = start.distanceTo(end);
-    mid.y += dist * 0.25; // arc height
-
-    const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
-    return curve.getPoints(100);
-  }, [depLat, depLng, arrLat, arrLng]);
-
-  if (points.length < 2) return null;
-
-  // Current position along the path
-  const progressIdx = Math.floor(progress * (points.length - 1));
-  const traveledPoints = points.slice(0, progressIdx + 1);
-  const remainingPoints = points.slice(progressIdx);
-
+function CloudLayer() {
   return (
     <group>
-      {/* Full path (dim) */}
-      <Line
-        points={points}
-        color="#0066ff"
-        opacity={0.2}
-        lineWidth={0.5}
-        transparent
-      />
-
-      {/* Traveled path (bright) */}
-      {traveledPoints.length > 1 && (
-        <Line
-          points={traveledPoints}
-          color="#00e676"
-          opacity={0.7}
-          lineWidth={1}
-          transparent
+      {Array.from({ length: 20 }).map((_, i) => (
+        <Cloud
+          key={i}
+          position={[
+            (Math.random() - 0.5) * 50,
+            6 + Math.random() * 8,
+            (Math.random() - 0.5) * 50,
+          ]}
+          speed={0.15}
+          opacity={0.25}
+          width={2 + Math.random() * 4}
+          depth={0.5 + Math.random() * 1}
+          segments={12}
         />
-      )}
-
-      {/* Remaining path (dashed look via dim color) */}
-      {remainingPoints.length > 1 && (
-        <Line
-          points={remainingPoints}
-          color="#0066ff"
-          opacity={0.35}
-          lineWidth={0.5}
-          transparent
-          dashed
-          dashSize={1}
-          gapSize={0.5}
-        />
-      )}
-
-      {/* Waypoint dots every 25% */}
-      {[0.25, 0.5, 0.75].map(f => {
-        const idx = Math.floor(f * (points.length - 1));
-        const pt = points[idx];
-        return (
-          <mesh key={f} position={[pt.x, pt.y + 0.3, pt.z]}>
-            <sphereGeometry args={[0.1, 8, 8]} />
-            <meshBasicMaterial color={f < progress ? '#00e676' : '#0066ff'} opacity={0.6} transparent />
-          </mesh>
-        );
-      })}
+      ))}
     </group>
   );
 }
 
 /* ═══════════════════════════════════════════════
-   Airport marker on the ground
+   Detailed aircraft model
    ═══════════════════════════════════════════════ */
-function AirportMarker3D({ lat, lng, label, color = '#00e676' }) {
-  const scale = 25;
-  // Use a neutral center — we receive pre-projected positions from parent
-  // For simplicity, just place at a scaled position
-
-  if (lat == null || lng == null) return null;
-  const x = lng * 0.25;
-  const z = -lat * 0.25;
-
-  return (
-    <group position={[x, 0.05, z]}>
-      {/* Vertical beacon pillar */}
-      <mesh position={[0, 0.3, 0]}>
-        <cylinderGeometry args={[0.04, 0.06, 0.6, 8]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.8} />
-      </mesh>
-      {/* Glowing top sphere */}
-      <mesh position={[0, 0.65, 0]}>
-        <sphereGeometry args={[0.1, 16, 16]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.5} />
-      </mesh>
-      {/* Ring */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
-        <ringGeometry args={[0.15, 0.2, 32]} />
-        <meshBasicMaterial color={color} opacity={0.4} transparent side={THREE.DoubleSide} />
-      </mesh>
-      {label && (
-        <Text position={[0, 0.85, 0]} fontSize={0.18} color={color} anchorX="center" anchorY="middle" fontWeight="bold">
-          {label}
-        </Text>
-      )}
-    </group>
-  );
-}
-
-/* ═══════════════════════════════════════════════
-   3D Aircraft model (built inline from primitives)
-   ═══════════════════════════════════════════════ */
-function Aircraft3D({ position, heading = 0, altitude = 0, speed = 0 }) {
+function DetailedAircraft({ position, heading = 0, altitude = 10000, speed = 250 }) {
   const groupRef = useRef();
   const targetRot = useRef(0);
   const currentRot = useRef(0);
+  const engineGlow = useRef(null);
 
   useFrame((_, delta) => {
     targetRot.current = (heading - 90) * (Math.PI / 180);
-    currentRot.current += (targetRot.current - currentRot.current) * Math.min(delta * 5, 1);
+    currentRot.current += (targetRot.current - currentRot.current) * Math.min(delta * 4, 1);
     if (groupRef.current) {
       groupRef.current.rotation.y = currentRot.current;
     }
+    // Pulse engine glow
+    if (engineGlow.current) {
+      engineGlow.current.intensity = 0.6 + Math.sin(Date.now() * 0.01) * 0.2;
+    }
   });
 
-  const altY = Math.max(0.5, altitude / 35000 * 8);
+  const altY = Math.max(1.2, altitude / 35000 * 10);
 
   return (
-    <Float speed={0.8} rotationIntensity={0.02} floatIntensity={0.15}>
-      <group ref={groupRef} position={[position[0], altY, position[2]]} scale={0.6}>
-        {/* Fuselage */}
+    <Float speed={0.6} rotationIntensity={0.015} floatIntensity={0.12}>
+      <group ref={groupRef} position={[position[0], altY, position[2]]} scale={0.55}>
+        {/* ── Fuselage (main body) ── */}
+        <mesh castShadow>
+          <capsuleGeometry args={[0.18, 1.4, 8, 16]} />
+          <meshStandardMaterial color="#f1f5f9" metalness={0.15} roughness={0.25} />
+        </mesh>
+
+        {/* ── Fuselage stripe ── */}
         <mesh>
-          <cylinderGeometry args={[0.12, 0.1, 1.4, 16]} />
-          <meshStandardMaterial color="#e2e8f0" metalness={0.3} roughness={0.3} />
+          <capsuleGeometry args={[0.185, 1.38, 4, 16]} />
+          <meshBasicMaterial color="#0066ff" opacity={0.15} transparent />
         </mesh>
-        {/* Nose */}
-        <mesh position={[0, 0, 0.75]}>
-          <coneGeometry args={[0.12, 0.28, 16]} />
-          <meshStandardMaterial color="#cbd5e1" metalness={0.3} roughness={0.3} />
+
+        {/* ── Nose cone ── */}
+        <mesh position={[0, 0, 0.78]} castShadow>
+          <sphereGeometry args={[0.16, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2.5]} />
+          <meshStandardMaterial color="#e2e8f0" metalness={0.1} roughness={0.2} />
         </mesh>
-        {/* Tail cone */}
-        <mesh position={[0, 0, -0.75]} rotation={[Math.PI, 0, 0]}>
-          <coneGeometry args={[0.08, 0.22, 16]} />
-          <meshStandardMaterial color="#94a3b8" metalness={0.3} roughness={0.3} />
+
+        {/* ── Cockpit windows ── */}
+        <mesh position={[0, 0.06, 0.68]} rotation={[0.3, 0, 0]}>
+          <sphereGeometry args={[0.07, 8, 4, 0, Math.PI * 2, 0, Math.PI / 3]} />
+          <meshStandardMaterial color="#60a5fa" metalness={0.1} roughness={0.0} emissive="#3b82f6" emissiveIntensity={0.4} />
         </mesh>
-        {/* Wings */}
-        <mesh position={[0, 0, -0.05]}>
-          <boxGeometry args={[2.0, 0.03, 0.28]} />
-          <meshStandardMaterial color="#334155" metalness={0.4} roughness={0.3} />
+
+        {/* ── Tail cone ── */}
+        <mesh position={[0, -0.02, -0.78]}>
+          <coneGeometry args={[0.1, 0.32, 12, 8]} />
+          <meshStandardMaterial color="#cbd5e1" metalness={0.15} roughness={0.25} />
         </mesh>
-        {/* Tail stabilizers */}
-        <mesh position={[0, 0, -0.55]}>
-          <boxGeometry args={[0.7, 0.02, 0.14]} />
-          <meshStandardMaterial color="#475569" metalness={0.4} roughness={0.3} />
+
+        {/* ── Wings (main) ── */}
+        <group position={[0, -0.02, -0.05]}>
+          {/* Left wing */}
+          <mesh position={[-0.9, 0, 0]} rotation={[0, 0, 0.06]} castShadow>
+            <boxGeometry args={[1.2, 0.04, 0.3]} />
+            <meshStandardMaterial color="#334155" metalness={0.3} roughness={0.25} />
+          </mesh>
+          {/* Right wing */}
+          <mesh position={[0.9, 0, 0]} rotation={[0, 0, -0.06]} castShadow>
+            <boxGeometry args={[1.2, 0.04, 0.3]} />
+            <meshStandardMaterial color="#334155" metalness={0.3} roughness={0.25} />
+          </mesh>
+          {/* Wing connection */}
+          <mesh>
+            <boxGeometry args={[0.6, 0.04, 0.3]} />
+            <meshStandardMaterial color="#475569" metalness={0.3} roughness={0.25} />
+          </mesh>
+        </group>
+
+        {/* ── Horizontal stabilizer ── */}
+        <group position={[0, 0.05, -0.65]}>
+          <mesh position={[-0.3, 0, 0]}>
+            <boxGeometry args={[0.35, 0.025, 0.15]} />
+            <meshStandardMaterial color="#475569" metalness={0.25} roughness={0.3} />
+          </mesh>
+          <mesh position={[0.3, 0, 0]}>
+            <boxGeometry args={[0.35, 0.025, 0.15]} />
+            <meshStandardMaterial color="#475569" metalness={0.25} roughness={0.3} />
+          </mesh>
+        </group>
+
+        {/* ── Vertical stabilizer (tail fin) ── */}
+        <mesh position={[0, 0.28, -0.72]}>
+          <boxGeometry args={[0.04, 0.4, 0.22]} />
+          <meshStandardMaterial color="#1e40af" metalness={0.2} roughness={0.3} />
         </mesh>
-        <mesh position={[0, 0.18, -0.6]}>
-          <boxGeometry args={[0.03, 0.3, 0.18]} />
-          <meshStandardMaterial color="#475569" metalness={0.4} roughness={0.3} />
+        {/* Tail fin accent */}
+        <mesh position={[0, 0.32, -0.72]}>
+          <boxGeometry args={[0.045, 0.38, 0.08]} />
+          <meshBasicMaterial color="#00e676" opacity={0.3} transparent />
         </mesh>
-        {/* Engines */}
-        {[[-0.42, -0.1, 0.05], [0.42, -0.1, 0.05]].map((pos, i) => (
+
+        {/* ── Engines (underwing, 2) ── */}
+        {[[-0.45, -0.15, 0.08], [0.45, -0.15, 0.08]].map((pos, i) => (
           <group key={i} position={pos}>
+            {/* Nacelle */}
             <mesh>
-              <cylinderGeometry args={[0.07, 0.07, 0.22, 12]} />
-              <meshStandardMaterial color="#1e293b" metalness={0.6} roughness={0.2} />
+              <cylinderGeometry args={[0.09, 0.09, 0.28, 16]} />
+              <meshStandardMaterial color="#1e293b" metalness={0.5} roughness={0.15} />
             </mesh>
-            <mesh position={[0, 0, 0.12]}>
-              <torusGeometry args={[0.07, 0.014, 8, 12]} />
-              <meshStandardMaterial color="#0f172a" metalness={0.7} roughness={0.2} />
+            {/* Intake ring */}
+            <mesh position={[0, 0, 0.15]}>
+              <torusGeometry args={[0.09, 0.016, 8, 16]} />
+              <meshStandardMaterial color="#0f172a" metalness={0.7} roughness={0.1} />
+            </mesh>
+            {/* Exhaust glow */}
+            <mesh position={[0, 0, -0.16]}>
+              <torusGeometry args={[0.07, 0.01, 8, 16]} />
+              <meshStandardMaterial
+                ref={i === 0 ? engineGlow : undefined}
+                color="#00e676"
+                emissive="#00e676"
+                emissiveIntensity={0.8}
+                metalness={0.1}
+                roughness={0.1}
+              />
             </mesh>
           </group>
         ))}
-        {/* Glow strip along fuselage */}
-        <mesh position={[0, 0, 0]} scale={[1.01, 1.01, 1.01]}>
-          <cylinderGeometry args={[0.12, 0.1, 1.4, 16]} />
-          <meshBasicMaterial color="#00e676" opacity={0.1} transparent />
+
+        {/* ── Landing gear (retracted, small bumps) ── */}
+        {[[-0.2, -0.2, 0.0], [0.2, -0.2, 0.0], [0, -0.18, -0.35]].map((pos, i) => (
+          <mesh key={`gear-${i}`} position={pos}>
+            <boxGeometry args={[0.06, 0.08, 0.1]} />
+            <meshStandardMaterial color="#64748b" metalness={0.5} roughness={0.2} />
+          </mesh>
+        ))}
+
+        {/* ── Position lights ── */}
+        {/* Left wingtip (red) */}
+        <mesh position={[-1.5, -0.02, -0.05]}>
+          <sphereGeometry args={[0.04, 8, 8]} />
+          <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={1.5} />
+        </mesh>
+        {/* Right wingtip (green) */}
+        <mesh position={[1.5, -0.02, -0.05]}>
+          <sphereGeometry args={[0.04, 8, 8]} />
+          <meshStandardMaterial color="#00ff00" emissive="#00ff00" emissiveIntensity={1.5} />
+        </mesh>
+        {/* Tail beacon (white strobe) */}
+        <mesh position={[0, 0.45, -0.82]}>
+          <sphereGeometry args={[0.05, 8, 8]} />
+          <meshStandardMaterial
+            color="#ffffff"
+            emissive="#ffffff"
+            emissiveIntensity={1.5 + Math.sin(Date.now() * 0.005) * 0.5}
+          />
+        </mesh>
+
+        {/* ── Subtle contrail exhaust ── */}
+        <mesh position={[0, -0.05, -0.85]}>
+          <coneGeometry args={[0.04, 0.4, 8]} />
+          <meshBasicMaterial color="#ffffff" opacity={0.08} transparent />
         </mesh>
       </group>
     </Float>
@@ -244,28 +274,143 @@ function Aircraft3D({ position, heading = 0, altitude = 0, speed = 0 }) {
 }
 
 /* ═══════════════════════════════════════════════
-   Chase camera controller
+   Flight arc with accurate projection
+   ═══════════════════════════════════════════════ */
+function FlightPathArc3D({ depLat, depLng, arrLat, arrLng, progress = 0.5, centerLat, centerLng }) {
+  const scale = 25;
+  const cos = Math.cos((centerLat || 30) * Math.PI / 180);
+
+  const project = (lat, lng) =>
+    new THREE.Vector3((lng - centerLng) * scale * cos, 0, -(lat - centerLat) * scale);
+
+  const points = useMemo(() => {
+    if (depLat == null || arrLat == null) return [];
+    const start = project(depLat, depLng);
+    const end = project(arrLat, arrLng);
+    const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+    const dist = start.distanceTo(end);
+    mid.y += dist * 0.22;
+    const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+    return curve.getPoints(120);
+  }, [depLat, depLng, arrLat, arrLng]);
+
+  if (points.length < 2) return null;
+
+  const progressIdx = Math.floor(progress * (points.length - 1));
+  const traveled = points.slice(0, Math.max(2, progressIdx + 1));
+
+  return (
+    <group>
+      {/* Full ghost path */}
+      <Line points={points} color="#ffffff" opacity={0.06} lineWidth={0.5} transparent />
+
+      {/* Traveled path glow */}
+      {traveled.length > 1 && (
+        <>
+          <Line points={traveled} color="#00e678" opacity={0.65} lineWidth={1.2} transparent />
+          <Line points={traveled} color="#00e678" opacity={0.25} lineWidth={3} transparent />
+        </>
+      )}
+
+      {/* Remaining path */}
+      {points.slice(progressIdx).length > 1 && (
+        <Line
+          points={points.slice(progressIdx)}
+          color="#0066ff"
+          opacity={0.3}
+          lineWidth={0.6}
+          transparent
+          dashed
+          dashSize={1.5}
+          gapSize={1}
+        />
+      )}
+
+      {/* Waypoint markers */}
+      {[0.25, 0.5, 0.75].map(f => {
+        const idx = Math.floor(f * (points.length - 1));
+        const pt = points[idx];
+        const isPast = f < progress;
+        return (
+          <group key={f} position={[pt.x, pt.y, pt.z]}>
+            <mesh>
+              <sphereGeometry args={[0.12, 12, 12]} />
+              <meshStandardMaterial
+                color={isPast ? '#00e678' : '#0066ff'}
+                emissive={isPast ? '#00e678' : '#0066ff'}
+                emissiveIntensity={isPast ? 0.6 : 0.3}
+              />
+            </mesh>
+            <mesh>
+              <sphereGeometry args={[0.18, 12, 12]} />
+              <meshBasicMaterial color={isPast ? '#00e678' : '#0066ff'} opacity={0.2} transparent />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   Airport beacon (3D)
+   ═══════════════════════════════════════════════ */
+function AirportBeacon3D({ lat, lng, centerLat, centerLng, label, color = '#00e678' }) {
+  if (lat == null || lng == null) return null;
+  const scale = 25;
+  const cos = Math.cos((centerLat || 30) * Math.PI / 180);
+  const x = (lng - centerLng) * scale * cos;
+  const z = -(lat - centerLat) * scale;
+
+  return (
+    <group position={[x, 0.1, z]}>
+      {/* Base ring */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.25, 0.35, 32]} />
+        <meshBasicMaterial color={color} opacity={0.5} transparent side={THREE.DoubleSide} />
+      </mesh>
+      {/* Inner ring */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.15, 0.2, 32]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1} />
+      </mesh>
+      {/* Beacon pillar */}
+      <mesh position={[0, 0.35, 0]}>
+        <cylinderGeometry args={[0.05, 0.07, 0.7, 8]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.6} />
+      </mesh>
+      {/* Top glow sphere */}
+      <mesh position={[0, 0.75, 0]}>
+        <sphereGeometry args={[0.12, 16, 16]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.5} />
+      </mesh>
+      {/* Label */}
+      <Text position={[0, 1.0, 0]} fontSize={0.22} color={color} anchorX="center" anchorY="middle" fontWeight="black">
+        {label || ''}
+      </Text>
+    </group>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   Chase camera
    ═══════════════════════════════════════════════ */
 function ChaseCamera({ target, heading = 0 }) {
   const { camera } = useThree();
-  const targetPos = useRef(new THREE.Vector3(0, 2, 8));
+  const targetPos = useRef(new THREE.Vector3(0, 3, 10));
 
   useFrame((_, delta) => {
     if (!target) return;
-
     const hRad = (heading - 90) * (Math.PI / 180);
-    const altY = Math.max(0.5, target[1] || 0);
-
-    // Camera orbits behind and to the side of the aircraft
-    const behindX = Math.sin(hRad) * 6;
-    const behindZ = Math.cos(hRad) * 6;
+    const altY = target[1] || 2;
+    const behindX = Math.sin(hRad) * 8;
+    const behindZ = Math.cos(hRad) * 8;
     const desired = new THREE.Vector3(
       target[0] + behindX,
-      altY + 3.5,
+      altY + 4.5,
       target[2] + behindZ,
     );
-
-    targetPos.current.lerp(desired, delta * 1.5);
+    targetPos.current.lerp(desired, delta * 2);
     camera.position.copy(targetPos.current);
     camera.lookAt(target[0], altY, target[2]);
   });
@@ -274,114 +419,89 @@ function ChaseCamera({ target, heading = 0 }) {
 }
 
 /* ═══════════════════════════════════════════════
-   Particle trail
-   ═══════════════════════════════════════════════ */
-function ParticleTrail({ position }) {
-  const pointsRef = useRef([]);
-  const lineRef = useRef();
-
-  useFrame(() => {
-    if (!position) return;
-    pointsRef.current.push(new THREE.Vector3(position[0], position[1], position[2]));
-    if (pointsRef.current.length > 60) pointsRef.current.shift();
-    if (lineRef.current && pointsRef.current.length > 1) {
-      lineRef.current.geometry.setFromPoints(pointsRef.current);
-    }
-  });
-
-  const geo = useMemo(() => new THREE.BufferGeometry(), []);
-
-  return (
-    <line ref={lineRef} geometry={geo}>
-      <lineBasicMaterial color="#00e676" opacity={0.3} transparent linewidth={1} />
-    </line>
-  );
-}
-
-/* ═══════════════════════════════════════════════
-   MAIN 3D FLIGHT SCENE
+   MAIN SCENE
    ═══════════════════════════════════════════════ */
 function Scene({ flight, progress = 0.5 }) {
   const dep = flight?.departure ? AIRPORTS[flight.departure] : null;
   const arr = flight?.arrival ? AIRPORTS[flight.arrival] : null;
 
-  // Scale flight position onto the 3D grid
   const lat = flight?.position?.lat ?? 30;
   const lng = flight?.position?.lng ?? 0;
-  const altY = (flight?.altitudeMeters ?? 10000) / 35000 * 8;
+  const altM = flight?.altitudeMeters ?? 10000;
+  const altY = altM / 35000 * 10;
 
-  // Center the scene roughly on the Atlantic
   const centerLat = dep && arr ? (dep.lat + arr.lat) / 2 : lat;
   const centerLng = dep && arr ? (dep.lon + arr.lon) / 2 : lng;
-
-  const project = (la, lo) => {
-    const cos = Math.cos(centerLat * Math.PI / 180);
-    const x = (lo - centerLng) * 25 * cos;
-    const z = -(la - centerLat) * 25;
-    return [x, z];
-  };
-
-  const aircraftPos = project(lat, lng);
-  const aircraft3DPos = [aircraftPos[0], altY, aircraftPos[1]];
+  const cos = Math.cos(centerLat * Math.PI / 180);
+  const ax = (lng - centerLng) * 25 * cos;
+  const az = -(lat - centerLat) * 25;
+  const aircraftPos = [ax, altY, az];
 
   return (
     <>
-      <ambientLight intensity={0.25} />
-      <directionalLight position={[10, 15, 5]} intensity={0.4} color="#0066ff" />
-      <directionalLight position={[-5, 3, -5]} intensity={0.2} color="#00e676" />
-      <pointLight position={aircraft3DPos} intensity={1.5} color="#00e676" distance={15} />
+      <Atmosphere />
+      <ambientLight intensity={0.3} />
+      <directionalLight
+        position={[20, 25, 10]}
+        intensity={0.5}
+        color="#ffeedd"
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+      />
+      <directionalLight position={[-10, 5, -10]} intensity={0.15} color="#4488cc" />
+      <hemisphereLight args={['#8899cc', '#112244', 0.3]} />
 
-      <GroundPlane />
+      <TerrainGround />
+
+      {/* Clouds */}
+      <Suspense fallback={null}>
+        <CloudLayer />
+      </Suspense>
 
       {/* Flight path */}
       {dep && arr && (
-        <FlightPathArc
+        <FlightPathArc3D
           depLat={dep.lat} depLng={dep.lon}
           arrLat={arr.lat} arrLng={arr.lon}
           progress={progress}
+          centerLat={centerLat}
+          centerLng={centerLng}
         />
       )}
 
-      {/* Airport markers */}
+      {/* Airport beacons */}
       {dep && (
-        <AirportMarker3D
-          lat={dep.lat} lng={dep.lon}
-          label={flight.departure}
-          color="#ff9800"
-        />
+        <AirportBeacon3D lat={dep.lat} lng={dep.lon} centerLat={centerLat} centerLng={centerLng} label={flight.departure} color="#ff9800" />
       )}
       {arr && (
-        <AirportMarker3D
-          lat={arr.lat} lng={arr.lon}
-          label={flight.arrival}
-          color="#00e676"
-        />
+        <AirportBeacon3D lat={arr.lat} lng={arr.lon} centerLat={centerLat} centerLng={centerLng} label={flight.arrival} color="#00e678" />
       )}
 
       {/* Altitude ring on ground below aircraft */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[aircraftPos[0], -0.45, aircraftPos[1]]}>
-        <ringGeometry args={[0.3, 0.4, 32]} />
-        <meshBasicMaterial color="#00e676" opacity={0.5} transparent side={THREE.DoubleSide} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ax, -0.56, az]}>
+        <ringGeometry args={[0.4, 0.55, 32]} />
+        <meshBasicMaterial color="#00e678" opacity={0.5} transparent side={THREE.DoubleSide} />
       </mesh>
+      <pointLight position={[ax, altY * 0.3, az]} intensity={0.6} color="#00e678" distance={12} />
 
       {/* Aircraft */}
-      <Aircraft3D
-        position={[aircraftPos[0], altY, aircraftPos[1]]}
+      <DetailedAircraft
+        position={[ax, altY, az]}
         heading={flight?.heading ?? 0}
-        altitude={flight?.altitudeMeters ?? 0}
+        altitude={altM}
         speed={flight?.velocity ?? 0}
       />
 
-      {/* Chase camera */}
-      <ChaseCamera target={aircraft3DPos} heading={flight?.heading ?? 0} />
+      {/* Camera */}
+      <ChaseCamera target={[ax, altY, az]} heading={flight?.heading ?? 0} />
 
       <OrbitControls
         enableDamping
-        dampingFactor={0.08}
-        minDistance={3}
-        maxDistance={25}
-        maxPolarAngle={Math.PI / 2.3}
-        target={new THREE.Vector3(aircraftPos[0], altY * 0.5, aircraftPos[1])}
+        dampingFactor={0.1}
+        minDistance={2.5}
+        maxDistance={30}
+        maxPolarAngle={Math.PI / 2.1}
+        target={new THREE.Vector3(ax, altY * 0.4, az)}
       />
     </>
   );
@@ -410,22 +530,28 @@ export default function FlightScene3D({ flight, progress = 0.5, height = 550 }) 
   return (
     <div
       style={{ width: '100%', height, cursor: 'grab' }}
-      className="rounded-2xl overflow-hidden border border-white/[0.05] shadow-2xl shadow-black/40"
+      className="rounded-2xl overflow-hidden border border-white/[0.05] shadow-2xl shadow-black/40 relative"
     >
       <Canvas
-        camera={{ position: [0, 5, 12], fov: 45 }}
+        camera={{ position: [0, 6, 14], fov: 45 }}
         gl={{ antialias: true, alpha: false }}
         style={{ background: '#060d1a' }}
-        onCreated={({ gl }) => { gl.setClearColor('#060d1a'); }}
+        shadows
       >
-        <Scene flight={flight} progress={progress} />
+        <Suspense fallback={null}>
+          <Scene flight={flight} progress={progress} />
+        </Suspense>
       </Canvas>
 
-      {/* Overlay: flight info badge */}
-      <div className="absolute top-3 left-3 z-10 pointer-events-none">
-        <div className="px-3 py-1.5 rounded-lg bg-black/50 backdrop-blur-sm border border-white/[0.08] text-xs text-white font-bold">
-          {flight.callsign?.trim()} · {flight.status === 'en_route' ? '🟢 EN ROUTE' : flight.status?.toUpperCase()}
+      {/* Overlay */}
+      <div className="absolute top-3 left-3 z-10 pointer-events-none flex items-center gap-2">
+        <div className="px-3 py-1.5 rounded-lg bg-black/50 backdrop-blur-sm border border-white/[0.08] text-xs text-white font-bold flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#00e678] animate-pulse" />
+          {flight.callsign?.trim()} · {flight.status === 'en_route' ? 'EN ROUTE' : flight.status?.toUpperCase()}
         </div>
+      </div>
+      <div className="absolute top-3 right-3 z-10 pointer-events-none text-[10px] text-[#7a8ba0]/60 bg-black/30 backdrop-blur-sm rounded-lg px-2.5 py-1">
+        Drag to orbit · Scroll to zoom
       </div>
     </div>
   );

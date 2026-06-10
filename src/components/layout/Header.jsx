@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 
 const navLinks = [
   { to: '/', label: 'Home', icon: '🏠' },
-  { to: '/track', label: 'Live Tracking', icon: '📡', highlight: true },
+  { to: '/radar', label: 'Flight Radar', icon: '🌍', highlight: true },
+  { to: '/track', label: 'Live Track', icon: '📡' },
   { to: '/search', label: 'Book Flight', icon: '🔍' },
   { to: '/dashboard', label: 'Dashboard', icon: '📊' },
   { to: '/bookings', label: 'My Trips', icon: '🎫' },

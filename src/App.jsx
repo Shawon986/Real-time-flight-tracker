@@ -11,6 +11,7 @@ import LoadingScreen from './components/ui/LoadingScreen';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const TrackPage = lazy(() => import('./pages/TrackPage'));
+const RadarPage = lazy(() => import('./pages/RadarPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const FlightDetailPage = lazy(() => import('./pages/FlightDetailPage'));
 const BookingPage = lazy(() => import('./pages/BookingPage'));
@@ -36,6 +37,7 @@ export default function App() {
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/track" element={<TrackPage />} />
+                <Route path="/radar" element={<RadarPage />} />
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/flight/:id" element={<FlightDetailPage />} />
                 <Route path="/book/:id" element={<BookingPage />} />
